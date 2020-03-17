@@ -180,6 +180,7 @@ void SlamGMapping::init()
   gsp_odom_ = NULL;
 
   got_first_scan_ = false;
+  correction_ = false;
   got_map_ = false;
   
 
@@ -269,6 +270,7 @@ void SlamGMapping::init()
 void SlamGMapping::startLiveSlam()
 {
   entropy_publisher_ = private_nh_.advertise<std_msgs::Float64>("entropy", 1, true);
+  correction_pub_ = private_nh_.advertise<std_msgs::Header>("correction", 1, true);
   sst_ = node_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   sstm_ = node_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   ss_ = node_.advertiseService("dynamic_map", &SlamGMapping::mapCallback, this);
@@ -639,6 +641,7 @@ SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 
     map_to_odom_mutex_.lock();
     map_to_odom_ = (odom_to_laser * laser_to_map).inverse();
+    correction_ = true;
     map_to_odom_mutex_.unlock();
 
     if(!got_map_ || (scan->header.stamp - last_map_update) > map_update_interval_)
@@ -800,5 +803,12 @@ void SlamGMapping::publishTransform()
   map_to_odom_mutex_.lock();
   ros::Time tf_expiration = ros::Time::now() + ros::Duration(tf_delay_);
   tfB_->sendTransform( tf::StampedTransform (map_to_odom_, tf_expiration, map_frame_, odom_frame_));
+  if(correction_){
+    correction_ = false;
+    std_msgs::Header header;
+    header.frame_id = map_frame_;
+    header.stamp = tf_expiration;
+    correction_pub_.publish(header);
+  }
   map_to_odom_mutex_.unlock();
 }

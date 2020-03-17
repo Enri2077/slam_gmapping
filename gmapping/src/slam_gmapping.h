@@ -31,6 +31,7 @@
 
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
+#include "std_msgs/Header.h"
 #include "std_msgs/Float64.h"
 #include "nav_msgs/GetMap.h"
 #include "tf/transform_listener.h"
@@ -63,6 +64,7 @@ class SlamGMapping
 
   private:
     ros::NodeHandle node_;
+    ros::Publisher correction_pub_;
     ros::Publisher entropy_publisher_;
     ros::Publisher sst_;
     ros::Publisher sstm_;
@@ -86,6 +88,7 @@ class SlamGMapping
     GMapping::OdometrySensor* gsp_odom_;
 
     bool got_first_scan_;
+    bool correction_;
 
     bool got_map_;
     nav_msgs::GetMap::Response map_;
